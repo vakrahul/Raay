@@ -20,11 +20,13 @@
 
 ## 1. Why We Built Raay
 
-Standard AI assistants are built for English typists and stay trapped inside a browser tab:
-- **The English Typing Barrier:** Expecting a billion Indians to type complex English prompts to use a computer excludes millions of users who think and speak naturally in **Telugu, Hindi, Tamil, Kannada, Malayalam, Bengali, Marathi, Gujarati, Punjabi, or code-mixed Hinglish and Telugish**.
-- **Chatbots Talk, Raay Acts:** Browser chatbots only return text. They cannot launch **Microsoft Excel** to audit a live kirana/grocery GST sheet, draw and recolour vector scenes in **Microsoft Paint**, export design blueprints into **VS Code**, or summarize local reports inside your `Downloads` folder.
+Most people in India don't think in English prompts. If you put a laptop in front of a kirana shopkeeper, our parents, or anyone who speaks Telugu, Hindi, or Tamil at home, the biggest barrier between them and the computer is the English keyboard.
 
-**Raay** bridges **Gnani.ai's sovereign Indian speech models** directly to the **Windows 11 UI Automation (`IUIAutomation`) tree, Win32 APIs, and Excel COM engine**—turning natural Indian speech into your keyboard and mouse.
+Even when you try voice assistants or chatbots like ChatGPT and Gemini, two things break right away:
+1. **They are stuck inside a browser tab.** Ask a chatbot to open your local Excel grocery sheet and check today's UPI payments, or open MS Paint and draw a diagram, and it tells you it can't touch your desktop.
+2. **They fail on how we actually talk.** In real life, nobody speaks pure textbook Telugu or pure English—we mix them in the same sentence: *"Rahul, grocery Excel file open cheyyi — indulo UPI payments enni?"* or *"Circle lopa unna red color ni yellow ki change cheyyi."*
+
+We built **Raay** so you don't have to type at all. It connects **Gnani.ai's speech models (`Prisma STT` & `Timbre TTS`)** and a **pluggable LLM planner (`Claude / GPT / Gemini / Ollama`)** directly to Windows 11 (`UIA`, `Win32`, and `Excel COM`). You just talk to your laptop in your own language, and it opens the apps and does the work in front of you.
 
 ---
 
