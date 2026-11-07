@@ -4,8 +4,6 @@
 > *Built on **Gnani.ai's Sovereign Speech Stack (`Gnani Prisma STT` & `Gnani Timbre TTS`)** for **The Great Indian AI Internship Challenge (`#GreatIndianAIInternshipChallenge #GnaniAI`)**.*
 
 <p align="center">
-  <a href="SOLUTION_PITCH.md"><img src="https://img.shields.io/badge/Solution%20Pitch-1--Page%20Brief%20(MD)-f59e0b.svg" alt="1-Page Solution Pitch (MD)"></a>
-  <a href="SOLUTION_PITCH_1PAGE.pdf"><img src="https://img.shields.io/badge/Solution%20Pitch-1--Page%20PDF-ef4444.svg" alt="1-Page Solution Pitch (PDF)"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-0284c7.svg" alt="License: MIT"></a>
   <a href="docs/ARCHITECTURE.md"><img src="https://img.shields.io/badge/Architecture-Sovereign%20Voice%20OS-2563eb.svg" alt="Architecture"></a>
   <a href="#"><img src="https://img.shields.io/badge/Gnani.ai-Prisma%20STT%20%2B%20Timbre%20TTS-7c3aed.svg" alt="Gnani.ai Stack"></a>
@@ -13,8 +11,6 @@
   <a href="#"><img src="https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011%20x64-0f172a.svg" alt="Windows 11"></a>
   <a href="#"><img src="https://img.shields.io/badge/Security-Windows%20DPAPI%20%2B%20Zero--Trust-dc2626.svg" alt="Security"></a>
 </p>
-
-> 📄 **Gnani.ai Submission 1-Page Solution Pitch:** [**Read `SOLUTION_PITCH.md`**](SOLUTION_PITCH.md) | [**Download `SOLUTION_PITCH_1PAGE.pdf` (Strictly 1 Page)**](SOLUTION_PITCH_1PAGE.pdf) | [**Full Architecture Spec (`docs/ARCHITECTURE.md`)**](docs/ARCHITECTURE.md)
 
 ---
 
