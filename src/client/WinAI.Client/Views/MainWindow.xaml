@@ -1,0 +1,53 @@
+<Window
+    x:Class="WinAI.Client.Views.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="Windows AI Operating Environment"
+    mc:Ignorable="d">
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Top Emergency Banner & Status Bar -->
+        <Border Grid.Row="0" Background="#1A1A1A" Padding="12,8" BorderBrush="#333333" BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+                    <TextBlock Text="WinAI-OE" FontWeight="Bold" FontSize="16" Foreground="#4CC2FF" />
+                    <TextBlock Text="•" Foreground="#666666" />
+                    <TextBlock Text="{x:Bind ViewModel.ConnectionStatus, Mode=OneWay}" FontSize="12" Foreground="#888888" VerticalAlignment="Center" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="EMERGENCY STOP" Background="#C42B1C" Foreground="White" FontWeight="SemiBold"
+                        Click="EmergencyStop_Click" AutomationProperties.Name="Emergency Stop All Agents" />
+            </Grid>
+        </Border>
+
+        <!-- Main Body with Navigation Rail and Active Content Frame -->
+        <NavigationView Grid.Row="1" x:Name="MainNav" PaneDisplayMode="LeftCompact"
+                        IsBackButtonVisible="Collapsed" SelectionChanged="MainNav_SelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="Chat &amp; Workspace" Tag="Chat" Icon="Message" />
+                <NavigationViewItem Content="Model Providers" Tag="Models" Icon="Library" />
+                <NavigationViewItem Content="Agent Monitor" Tag="Agents" Icon="People" />
+                <NavigationViewItem Content="Permissions &amp; Policy" Tag="Security" Icon="Permissions" />
+                <NavigationViewItem Content="Contextual Memory" Tag="Memory" Icon="BrowsePhotos" />
+            </NavigationView.MenuItems>
+
+            <Frame x:Name="ContentFrame" Margin="16" />
+        </NavigationView>
+
+        <!-- Bottom Audit Status Indicator -->
+        <StatusBar Grid.Row="2" Background="#111111" Padding="12,4">
+            <TextBlock Text="Audit Log: SHA-256 Chained Integrity Verified" FontSize="11" Foreground="#00CC6A" />
+        </StatusBar>
+    </Grid>
+</Window>

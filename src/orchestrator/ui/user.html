@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WinAI-OE — My Workspace</title>
+<link rel="stylesheet" href="/ui/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>WinAI-OE · My Workspace</h1>
+  <div><span class="who" id="who"></span><button class="secondary" onclick="logout()">Sign out</button></div>
+</header>
+<main>
+  <div class="tabs" id="tabs"></div>
+  <div id="view"></div>
+</main>
+<script src="/ui/app.js"></script>
+<script>
+let ME = null, current = "tasks";
+async function init() {
+  ME = await requireAuth(null);
+  document.getElementById("who").textContent = ME.email + " (" + ME.roles.join(", ") + ")";
+  [["tasks", "My Tasks"], ["settings", "My Settings"]].forEach(([id, label]) => {
+    const b = document.createElement("button");
+    b.textContent = label; b.className = "secondary"; b.dataset.tab = id;
+    b.onclick = () => show(id);
+    document.getElementById("tabs").appendChild(b);
+  });
+  show("tasks");
+}
+function mark() {
+  document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("active", b.dataset.tab === current));
+}
+async function show(id) {
+  current = id; mark();
+  const v = document.getElementById("view");
+  try { id === "tasks" ? await vTasks(v) : await vSettings(v); }
+  catch (e) { toast(e.message, true); }
+}
+async function vTasks(v) {
+  setLoading(v, true);
+  const data = await api("/tasks?mine=true&limit=100");
+  const rows = data.tasks.map((t) => `<tr><td>#${t.id}</td><td>${statusBadge(t.status)}</td>
+    <td>${esc((t.prompt || "").slice(0, 100))}</td>
+    <td style="color:var(--muted);font-size:11px">${esc((t.result_summary || t.failure_reason || "").slice(0, 140))}</td>
+    <td class="mono">${t.completed_at ? new Date(t.completed_at * 1000).toLocaleString() : "—"}</td></tr>`).join("");
+  v.innerHTML = `<div class="panel"><h2>My task history (${data.tasks.length})</h2>
+    ${rows ? `<table><tr><th>ID</th><th>Status</th><th>Prompt</th><th>Result</th><th>Finished</th></tr>${rows}</table>`
+      : `<div class="empty">No tasks yet. Dispatch one from the dashboard or API to see it here.</div>`}</div>`;
+}
+async function vSettings(v) {
+  v.innerHTML = `<div class="panel"><h2>My configuration (JSON)</h2>
+    <p style="color:var(--muted);font-size:12px">Your private per-user settings object.</p>
+    <textarea id="cfg" rows="8">${esc(JSON.stringify(ME.configuration, null, 2))}</textarea>
+    <div class="row" style="margin-top:10px"><div><button onclick="saveCfg()">Save</button></div></div></div>`;
+}
+async function saveCfg() {
+  let parsed;
+  try { parsed = JSON.parse(document.getElementById("cfg").value); }
+  catch (e) { return toast("Invalid JSON: " + e.message, true); }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
+    return toast("Configuration must be a JSON object.", true);
+  try {
+    const me = await api("/me/config", { method: "PATCH", body: JSON.stringify({ configuration: parsed }) });
+    ME = me; toast("Saved.");
+  } catch (e) { toast(e.message, true); }
+}
+init().catch((e) => { if (e.message !== "redirect" && e.message !== "forbidden") toast(e.message, true); });
+</script>
+</body>
+</html>

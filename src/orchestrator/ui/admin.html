@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WinAI-OE — Admin Console</title>
+<link rel="stylesheet" href="/ui/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>WinAI-OE · Admin Console</h1>
+  <div><span class="who" id="who"></span><button class="secondary" onclick="logout()">Sign out</button></div>
+</header>
+<main>
+  <div class="tabs" id="tabs"></div>
+  <div id="view"></div>
+</main>
+<script src="/ui/app.js"></script>
+<script>
+let ME = null;
+const TABS = [
+  ["dashboard", "Dashboard"], ["admins", "Admins"], ["users", "Users"],
+  ["roles", "Roles & Permissions"], ["settings", "System Settings"],
+  ["agent", "Agent Config"], ["tasks", "Tasks"], ["audit", "Audit Logs"],
+];
+let current = "dashboard";
+
+async function init() {
+  ME = await requireAuth(["SUPER_ADMIN", "ADMIN"]);
+  document.getElementById("who").textContent = ME.email + " (" + ME.roles.join(", ") + ")";
+  const box = document.getElementById("tabs");
+  TABS.forEach(([id, label]) => {
+    const b = document.createElement("button");
+    b.textContent = label; b.className = "secondary"; b.dataset.tab = id;
+    b.onclick = () => show(id);
+    box.appendChild(b);
+  });
+  show("dashboard");
+}
+function mark() {
+  document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("active", b.dataset.tab === current));
+}
+async function show(id) {
+  current = id; mark();
+  const v = document.getElementById("view");
+  try {
+    await ({ dashboard: vDashboard, admins: vAdmins, users: vUsers, roles: vRoles,
+      settings: vSettings, agent: vAgent, tasks: vTasks, audit: vAudit })[id](v);
+  } catch (e) { toast(e.message, true); }
+}
+
+/* ---- Dashboard: real counts only ---- */
+async function vDashboard(v) {
+  setLoading(v, true, "Loading live counts…");
+  const [admins, users, tasks, audit] = await Promise.all([
+    api("/admins").catch(() => ({ admins: [] })),
+    api("/users").catch(() => ({ users: [] })),
+    api("/tasks?limit=200").catch(() => ({ tasks: [] })),
+    api("/audit/verify").catch(() => ({ valid: null })),
+  ]);
+  const byStatus = {};
+  (tasks.tasks || []).forEach((t) => { byStatus[t.status] = (byStatus[t.status] || 0) + 1; });
+  const ok = (tasks.tasks || []).filter((t) => t.status === "COMPLETED").length;
+  const bad = (tasks.tasks || []).filter((t) => ["FAILED", "BLOCKED"].includes(t.status)).length;
+  const activeUsers = (users.users || []).filter((u) => u.status === "active").length;
+  v.innerHTML = `
+    <div class="cards">
+      <div class="card"><div class="num">${admins.admins.length}</div><div class="lbl">Total admins</div></div>
+      <div class="card"><div class="num">${users.users.length}</div><div class="lbl">Total users (${activeUsers} active)</div></div>
+      <div class="card"><div class="num">${tasks.tasks.length}</div><div class="lbl">Tasks (recent 200)</div></div>
+      <div class="card"><div class="num">${ok}</div><div class="lbl">Completed</div></div>
+      <div class="card"><div class="num">${bad}</div><div class="lbl">Failed / blocked</div></div>
+      <div class="card"><div class="num">${audit.valid === null ? "?" : (audit.valid ? "OK" : "BROKEN")}</div><div class="lbl">Audit chain</div></div>
+    </div>
+    <div class="panel"><h2>Status by task state (recent 200)</h2>
+      <div>${Object.keys(byStatus).sort().map((s) => `${statusBadge(s)} × ${byStatus[s]}`).join(" ") || "No tasks yet."}</div>
+    </div>
+    <div class="panel"><h2>Recent activity</h2><div id="recent"></div></div>`;
+  const recent = await api("/audit?limit=8").catch(() => ({ audit: [] }));
+  document.getElementById("recent").innerHTML = recent.audit.length
+    ? `<table><tr><th>Time</th><th>Event</th><th>Message</th></tr>${recent.audit.map((a) =>
+      `<tr><td class="mono">${esc(new Date(a.timestamp * 1000).toLocaleString())}</td><td>${esc(a.event_type)}</td><td>${esc(a.message)}</td></tr>`).join("")}</table>`
+    : `<div class="empty">No audit events yet.</div>`;
+}
+
+/* ---- Admins ---- */
+async function vAdmins(v) {
+  setLoading(v, true);
+  const data = await api("/admins");
+  const rows = data.admins.map((a) => `<tr>
+    <td>#${a.id}<br><span class="mono">${esc(a.name)}</span></td>
+    <td>${esc(a.email)}<br>${statusBadge(a.status)}</td>
+    <td>${a.roles.map(esc).join(", ")}<br><span style="color:var(--muted);font-size:11px">direct: ${a.direct_permissions.map(esc).join(", ") || "—"}</span></td>
+    <td style="white-space:nowrap">
+      <button class="secondary" onclick="toggleAdmin(${a.id},'${a.status}')"> ${a.status === "active" ? "Disable" : "Enable"}</button>
+      <button class="secondary" onclick="resetPw(${a.id},'${esc(a.email)}')">Reset PW</button>
+      <button class="secondary" onclick="grantPerm(${a.id})">+Perm</button>
+      <button class="danger" onclick="delAdmin(${a.id})">Delete</button>
+    </td></tr>`).join("");
+  v.innerHTML = `<div class="panel"><h2>Administrators (${data.admins.length})</h2>
+    <div class="row" style="margin-bottom:12px"><div>
+      <button onclick="createAdmin()">+ Create admin</button></div></div>
+    ${rows ? `<table><tr><th>ID / Name</th><th>Email / Status</th><th>Roles / Direct perms</th><th>Actions</th></tr>${rows}</table>`
+      : `<div class="empty">No administrators yet.</div>`}</div>
+    <div class="panel"><h2>Grant / revoke direct permission</h2>
+      <p style="color:var(--muted);font-size:12px">Use +Perm on a row to grant, or revoke below. Role changes happen on the Users tab.</p>
+      <div class="row"><div><label>Admin ID<input id="rp-id" type="number"></label></div>
+      <div><label>Permission<input id="rp-perm" placeholder="view_usage"></label></div>
+      <div style="flex:0"><label>&nbsp;</label><button class="secondary" onclick="revokePerm()">Revoke</button></div></div></div>`;
+}
+async function createAdmin() {
+  const name = prompt("Display name:"); if (!name) return;
+  const email = prompt("Email:"); if (!email) return;
+  const password = prompt("Initial password (leave blank to auto-generate, min 10 chars):") || undefined;
+  try {
+    const r = await api("/admins", { method: "POST", body: JSON.stringify({ name, email, password }) });
+    toast("Admin created: " + r.user.email + (r.temporary_password ? " — temporary password: " + r.temporary_password : ""));
+    show("admins");
+  } catch (e) { toast(e.message, true); }
+}
+async function toggleAdmin(id, st) {
+  if (!await confirmDialog("Change status", (st === "active" ? "Disable" : "Enable") + " admin #" + id + "?")) return;
+  try { await api(`/admins/${id}`, { method: "PATCH", body: JSON.stringify({ status: st === "active" ? "disabled" : "active" }) }); show("admins"); }
+  catch (e) { toast(e.message, true); }
+}
+async function delAdmin(id) {
+  if (!await confirmDialog("Delete admin", "Permanently delete admin #" + id + " and their user account?")) return;
+  try { await api(`/admins/${id}`, { method: "DELETE" }); toast("Deleted."); show("admins"); }
+  catch (e) { toast(e.message, true); }
+}
+async function resetPw(id, email) {
+  const pw = prompt(`New password for ${email} (blank = auto-generate):`) || undefined;
+  try {
+    const r = await api(`/admins/${id}/password`, { method: "PATCH", body: JSON.stringify({ password: pw }) });
+    toast("Password reset." + (r.temporary_password ? " Temporary: " + r.temporary_password : ""));
+  } catch (e) { toast(e.message, true); }
+}
+async function grantPerm(id) {
+  const perm = prompt("Permission to grant (e.g. view_usage):"); if (!perm) return;
+  try { await api(`/admins/${id}/permissions`, { method: "POST", body: JSON.stringify({ permission: perm }) }); toast("Granted."); show("admins"); }
+  catch (e) { toast(e.message, true); }
+}
+async function revokePerm() {
+  const id = document.getElementById("rp-id").value, perm = document.getElementById("rp-perm").value;
+  if (!id || !perm) return toast("Admin ID and permission required.", true);
+  try { await api(`/admins/${id}/permissions/${encodeURIComponent(perm)}`, { method: "DELETE" }); toast("Revoked."); show("admins"); }
+  catch (e) { toast(e.message, true); }
+}
+
+/* ---- Users ---- */
+async function vUsers(v) {
+  setLoading(v, true);
+  const [users, roles] = await Promise.all([api("/users"), api("/roles").catch(() => ({ roles: [] }))]);
+  const rows = users.users.map((u) => `<tr>
+    <td>#${u.id} ${esc(u.name)}<br><span class="mono">${esc(u.email)}</span></td>
+    <td>${statusBadge(u.status)}<br>${u.roles.map(esc).join(", ")}</td>
+    <td style="white-space:nowrap">
+      <button class="secondary" onclick="toggleUser(${u.id},'${u.status}')">${u.status === "active" ? "Disable" : "Enable"}</button>
+      <button class="secondary" onclick="chgRoles(${u.id},'${esc(u.roles.join(","))}')">Roles</button>
+    </td></tr>`).join("");
+  v.innerHTML = `<div class="panel"><h2>Users (${users.users.length})</h2>
+    <div class="row" style="margin-bottom:12px"><div><button onclick="createUser()">+ Create user</button></div></div>
+    ${rows ? `<table><tr><th>User</th><th>Status / Roles</th><th>Actions</th></tr>${rows}</table>` : `<div class="empty">No users yet.</div>`}</div>`;
+}
+async function createUser() {
+  const name = prompt("Display name:"); if (!name) return;
+  const email = prompt("Email:"); if (!email) return;
+  const password = prompt("Password (min 10 chars):"); if (!password) return;
+  const role = prompt("Role (USER or ADMIN):", "USER") || "USER";
+  try { await api("/users", { method: "POST", body: JSON.stringify({ name, email, password, role }) }); toast("User created."); show("users"); }
+  catch (e) { toast(e.message, true); }
+}
+async function toggleUser(id, st) {
+  if (!await confirmDialog("Change status", (st === "active" ? "Disable" : "Enable") + " user #" + id + "?")) return;
+  try { await api(`/users/${id}`, { method: "PATCH", body: JSON.stringify({ status: st === "active" ? "disabled" : "active" }) }); show("users"); }
+  catch (e) { toast(e.message, true); }
+}
+async function chgRoles(id, current) {
+  const add = prompt(`Add roles (comma separated). Current: ${current}. Empty = none.`) || "";
+  const rem = prompt("Remove roles (comma separated). Empty = none.") || "";
+  const body = {};
+  if (add.trim()) body.add_roles = add.split(",").map((s) => s.trim()).filter(Boolean);
+  if (rem.trim()) body.remove_roles = rem.split(",").map((s) => s.trim()).filter(Boolean);
+  if (!Object.keys(body).length) return;
+  try { await api(`/users/${id}`, { method: "PATCH", body: JSON.stringify(body) }); toast("Roles updated."); show("users"); }
+  catch (e) { toast(e.message, true); }
+}
+
+/* ---- Roles ---- */
+async function vRoles(v) {
+  setLoading(v, true);
+  const [roles, allPerms] = await Promise.all([api("/roles"), api("/permissions")]);
+  v.innerHTML = `<div class="panel"><h2>Roles &amp; permissions (read-only matrix; grants via Admins/Users)</h2>
+    ${roles.roles.map((r) => `<h3>${esc(r.name)}</h3><p style="color:var(--muted);font-size:12px">${esc(r.description)}</p>
+      <div>${r.permissions.map((p) => `<span class="badge">${esc(p)}</span>`).join(" ") || "<i>none</i>"}</div>`).join("")}
+    <h3>All known permissions (${allPerms.permissions.length})</h3>
+    <div>${allPerms.permissions.map((p) => `<span class="badge" title="${esc(p.description)}">${esc(p.name)}</span>`).join(" ")}</div></div>`;
+}
+
+/* ---- Settings ---- */
+async function vSettings(v) {
+  setLoading(v, true);
+  const data = await api("/settings");
+  const sRows = Object.keys(data.settings).map((k) => {
+    const val = data.settings[k];
+    const shown = (typeof val === "object") ? JSON.stringify(val) : String(val);
+    return `<tr><td class="mono">${esc(k)}</td><td><input data-k="${esc(k)}" value="${esc(shown)}"></td></tr>`;
+  }).join("");
+  const fRows = Object.keys(data.flags).map((k) => `<tr><td class="mono">${esc(k)}</td>
+    <td><input type="checkbox" data-f="${esc(k)}" ${data.flags[k].enabled ? "checked" : ""} style="width:auto"></td>
+    <td style="color:var(--muted)">${esc(data.flags[k].description)}</td></tr>`).join("");
+  v.innerHTML = `<div class="panel"><h2>System settings</h2>
+    <p style="color:var(--muted);font-size:12px">Objects/lists edit as JSON. Secrets are masked and managed below.</p>
+    <table>${sRows}</table>
+    <div class="row" style="margin-top:10px"><div><button onclick="saveSettings()">Save settings</button></div></div></div>
+    <div class="panel"><h2>Feature flags</h2><table><tr><th>Flag</th><th>Enabled</th><th>Description</th></tr>${fRows}</table>
+    <div class="row" style="margin-top:10px"><div><button onclick="saveFlags()">Save flags</button></div></div></div>
+    <div class="panel"><h2>Store a secret</h2>
+    <div class="row"><div><label>Key<input id="sec-k"></label></div>
+    <div><label>Value<input id="sec-v" type="password"></label></div>
+    <div style="flex:0"><label>&nbsp;</label><button onclick="saveSecret()">Store</button></div></div></div>`;
+}
+function parseVal(str, oldVal) {
+  const t = str.trim();
+  if (t === "true") return true;
+  if (t === "false") return false;
+  if (t !== "" && !isNaN(Number(t))) return Number(t);
+  if ((t.startsWith("[") || t.startsWith("{")) ) { try { return JSON.parse(t); } catch (e) { return str; } }
+  return str;
+}
+async function saveSettings() {
+  const body = {};
+  document.querySelectorAll("input[data-k]").forEach((el) => { body[el.dataset.k] = parseVal(el.value); });
+  try { await api("/settings", { method: "PATCH", body: JSON.stringify({ settings: body }) }); toast("Settings saved."); }
+  catch (e) { toast(e.message, true); }
+}
+async function saveFlags() {
+  const body = {};
+  document.querySelectorAll("input[data-f]").forEach((el) => { body[el.dataset.f] = el.checked; });
+  try { await api("/settings", { method: "PATCH", body: JSON.stringify({ flags: body }) }); toast("Flags saved."); }
+  catch (e) { toast(e.message, true); }
+}
+async function saveSecret() {
+  const key = document.getElementById("sec-k").value, value = document.getElementById("sec-v").value;
+  if (!key || !value) return toast("Key and value required.", true);
+  if (!await confirmDialog("Store secret", `Store secret '${key}'? It will never be displayed again.`)) return;
+  try { await api("/settings/secrets", { method: "PATCH", body: JSON.stringify({ key, value }) }); toast("Secret stored (masked)."); show("settings"); }
+  catch (e) { toast(e.message, true); }
+}
+
+/* ---- Agent config (live effective values) ---- */
+async function vAgent(v) {
+  setLoading(v, true);
+  const cfg = await api("/api/v1/agent/config");
+  v.innerHTML = `<div class="panel"><h2>Effective agent configuration (live from database)</h2>
+    <table>${Object.keys(cfg).filter((k) => k !== "feature_flags").map((k) =>
+      `<tr><td class="mono">${esc(k)}</td><td>${esc(JSON.stringify(cfg[k]))}</td></tr>`).join("")}</table>
+    <h3>Feature flags</h3><div>${Object.keys(cfg.feature_flags).map((k) =>
+      `<span class="badge ${cfg.feature_flags[k] ? "ok" : ""}">${esc(k)}: ${cfg.feature_flags[k] ? "on" : "off"}</span>`).join(" ")}</div>
+    <p style="color:var(--muted);font-size:12px">Change values on the System Settings tab; they apply to the next dispatched task with no restart.</p></div>`;
+}
+
+/* ---- Tasks ---- */
+async function vTasks(v) {
+  setLoading(v, true);
+  const data = await api("/tasks?limit=100");
+  const rows = data.tasks.map((t) => `<tr><td>#${t.id}</td><td>${statusBadge(t.status)}</td>
+    <td>${esc((t.prompt || "").slice(0, 90))}</td>
+    <td class="mono">u:${t.user_id == null ? "—" : t.user_id}</td>
+    <td style="color:var(--muted);font-size:11px">${esc((t.result_summary || t.failure_reason || "").slice(0, 120))}</td></tr>`).join("");
+  v.innerHTML = `<div class="panel"><h2>Task history (${data.tasks.length} recent)</h2>
+    ${rows ? `<table><tr><th>ID</th><th>Status</th><th>Prompt</th><th>User</th><th>Result</th></tr>${rows}</table>` : `<div class="empty">No tasks recorded yet.</div>`}</div>`;
+}
+
+/* ---- Audit ---- */
+async function vAudit(v) {
+  setLoading(v, true);
+  const [audit, verify] = await Promise.all([api("/audit?limit=100"), api("/audit/verify").catch(() => null)]);
+  const rows = audit.audit.map((a) => `<tr><td>#${a.id}</td>
+    <td class="mono">${esc(new Date(a.timestamp * 1000).toLocaleString())}</td>
+    <td>${esc(a.event_type)}</td><td>${esc(a.message)}</td>
+    <td class="mono">u:${a.actor_user_id == null ? "—" : a.actor_user_id}</td></tr>`).join("");
+  v.innerHTML = `<div class="panel"><h2>Audit logs</h2>
+    <p>Hash chain: ${verify ? (verify.valid ? `<span class="badge ok">VALID (${verify.checked} checked)</span>` : `<span class="badge bad">BROKEN at #${verify.checked}</span>`) : "unknown"}</p>
+    ${rows ? `<table><tr><th>ID</th><th>Time</th><th>Event</th><th>Message</th><th>Actor</th></tr>${rows}</table>` : `<div class="empty">No audit events yet.</div>`}</div>`;
+}
+
+init().catch((e) => { if (e.message !== "redirect" && e.message !== "forbidden") toast(e.message, true); });

@@ -1,0 +1,49 @@
+<Page
+    x:Class="WinAI.Client.Views.ChatView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:WinAI.Client.Models"
+    mc:Ignorable="d">
+
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Message Transcript -->
+        <ListView Grid.Row="0" ItemsSource="{x:Bind ViewModel.Messages, Mode=OneWay}"
+                  SelectionMode="None" AutomationProperties.Name="Chat Transcript">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="models:ChatMessageModel">
+                    <Border CornerRadius="8" Padding="12" Margin="0,4"
+                            Background="{x:Bind IsUser, Converter={StaticResource UserRoleBackgroundConverter}}"
+                            HorizontalAlignment="{x:Bind IsUser, Converter={StaticResource AlignmentConverter}}">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{x:Bind Role}" FontWeight="Bold" FontSize="11" Foreground="#888888" />
+                            <TextBlock Text="{x:Bind Content}" TextWrapping="Wrap" FontSize="14" />
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <!-- Input Box & Controls -->
+        <Grid Grid.Row="1" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBox Grid.Column="0" PlaceholderText="Type a prompt or task (e.g. 'inspect test files in workspace')..."
+                     Text="{x:Bind ViewModel.InputMessage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     AcceptsReturn="True" MaxHeight="120" AutomationProperties.Name="Chat Input Box" />
+
+            <Button Grid.Column="1" Content="Send" Click="Send_Click" AutomationProperties.Name="Send Message" IsEnabled="{x:Bind ViewModel.IsGenerating, Converter={StaticResource InverseBoolConverter}, Mode=OneWay}" />
+            <Button Grid.Column="2" Content="Cancel" Click="Cancel_Click" AutomationProperties.Name="Cancel Generation" IsEnabled="{x:Bind ViewModel.IsGenerating, Mode=OneWay}" />
+        </Grid>
+    </Grid>
+</Page>

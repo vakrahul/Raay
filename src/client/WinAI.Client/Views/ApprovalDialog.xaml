@@ -1,0 +1,46 @@
+<ContentDialog
+    x:Class="WinAI.Client.Views.ApprovalDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="Action Authorization Required"
+    PrimaryButtonText="Authorize Once"
+    CloseButtonText="Block Action"
+    DefaultButton="Close"
+    mc:Ignorable="d">
+
+    <StackPanel Spacing="12">
+        <Border Background="#332200" BorderBrush="#CC8800" BorderThickness="1" CornerRadius="6" Padding="10">
+            <StackPanel Spacing="4">
+                <TextBlock Text="SECURITY WARNING" FontWeight="Bold" Foreground="#FFCC00" FontSize="12" />
+                <TextBlock Text="An AI agent has proposed an operation that requires explicit human review before execution." TextWrapping="Wrap" FontSize="13" />
+            </StackPanel>
+        </Border>
+
+        <Grid ColumnSpacing="8" RowSpacing="6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Tool:" FontWeight="SemiBold" Foreground="#888888" />
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="{x:Bind ToolName, Mode=OneWay}" FontWeight="Bold" />
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Risk Tier:" FontWeight="SemiBold" Foreground="#888888" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="{x:Bind RiskTier, Mode=OneWay}" Foreground="#FF4444" FontWeight="Bold" />
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="Target:" FontWeight="SemiBold" Foreground="#888888" />
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="{x:Bind TargetResource, Mode=OneWay}" TextWrapping="Wrap" FontFamily="Consolas" />
+
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="Reason:" FontWeight="SemiBold" Foreground="#888888" />
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="{x:Bind Reason, Mode=OneWay}" TextWrapping="Wrap" />
+        </Grid>
+    </StackPanel>
+</ContentDialog>

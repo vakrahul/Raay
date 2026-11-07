@@ -1,0 +1,225 @@
+name: WinAI-OE CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONPATH: .
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  # =========================================================================
+  # 1. SECURITY & CODE HYGIENE AUDIT
+  # =========================================================================
+  hygiene-and-secrets-check:
+    name: Secrets & Hygiene Guard
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check for Leaked Secrets & Sensitive Files
+        shell: pwsh
+        run: |
+          Write-Host "[*] Auditing tracked repository files for secret leaks..."
+          $tracked = git ls-files
+          $leaked = $tracked | Where-Object { $_ -match '(\.env|\.pem|\.key|\.pfx|\.p12|id_rsa|audit\.log)$' }
+          if ($leaked) {
+            Write-Error "CRITICAL SECURITY VIOLATION: Sensitive file(s) tracked in Git: $leaked"
+            exit 1
+          }
+          Write-Host "[+] Zero secret files tracked in repository. Pass."
+
+  # =========================================================================
+  # 2. CORE UNIT TEST SUITE (Python 3.11 & 3.12 Matrix)
+  # =========================================================================
+  core-unit-tests:
+    name: Core Unit Tests (Python ${{ matrix.python-version }})
+    needs: hygiene-and-secrets-check
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install Dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run Core Subsystem Unit Tests
+        shell: pwsh
+        run: |
+          $testFiles = @(
+            "tests/unit/test_config.py",
+            "tests/unit/test_audit_logger.py",
+            "tests/unit/test_brain_stage4.py",
+            "tests/unit/test_planner_stage5.py",
+            "tests/unit/test_token_optimizer.py",
+            "tests/unit/test_app_scanner.py",
+            "tests/unit/test_dynamic_brain.py",
+            "tests/unit/test_environment.py",
+            "tests/unit/test_autonomous_agent_phases_2_to_12.py"
+          )
+          python -m pytest $testFiles -v --tb=short
+
+  # =========================================================================
+  # 3. JEV SYSTEM ONE DECISION LAYER TESTS
+  # =========================================================================
+  jev-decision-layer-tests:
+    name: JEV Decision Layer Suite
+    needs: hygiene-and-secrets-check
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: 'pip'
+
+      - name: Install Dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run Full JEV Decision Layer Test Matrix (10 Suites)
+        shell: pwsh
+        run: |
+          $jevFiles = @(
+            "tests/unit/test_jev_abstraction.py",
+            "tests/unit/test_jev_router.py",
+            "tests/unit/test_jev_agents.py",
+            "tests/unit/test_jev_model_routing.py",
+            "tests/unit/test_jev_security.py",
+            "tests/unit/test_jev_context.py",
+            "tests/unit/test_jev_usage.py",
+            "tests/unit/test_jev_ui.py",
+            "tests/unit/test_jev_benchmark.py",
+            "tests/unit/test_jev_stage10.py"
+          )
+          python -m pytest $jevFiles -v --tb=short
+
+  # =========================================================================
+  # 4. SECURITY & ADVERSARIAL ATTACK TESTS
+  # =========================================================================
+  security-tests:
+    name: Security & Adversarial Testing
+    needs: hygiene-and-secrets-check
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: 'pip'
+
+      - name: Install Dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run Penetration & Isolation Tests
+        shell: pwsh
+        run: |
+          $secFiles = @(
+            "tests/security/test_security_audit.py",
+            "tests/security/test_isolation_stage8.py"
+          )
+          python -m pytest $secFiles -v --tb=short
+
+  # =========================================================================
+  # 5. DYNAMIC CONTROL PLANE & RBAC TESTS
+  # =========================================================================
+  control-plane-rbac-tests:
+    name: Control Plane & Dynamic RBAC Tests
+    needs: hygiene-and-secrets-check
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: 'pip'
+
+      - name: Install Dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run Dynamic Control Plane & Approval Tests
+        shell: pwsh
+        run: |
+          $controlFiles = @(
+            "tests/integration/test_control_plane.py",
+            "tests/unit/test_approval_overlay.py",
+            "tests/unit/test_job_outreach_agent.py"
+          )
+          python -m pytest $controlFiles -v --tb=short
+
+  # =========================================================================
+  # 6. WINDOWS INTEGRATION & OS INTELLIGENCE TESTS
+  # =========================================================================
+  windows-integration-tests:
+    name: Windows Native Integration Tests
+    needs: hygiene-and-secrets-check
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: 'pip'
+
+      - name: Install Dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run Windows OS Intelligence & Vertical Slice Tests
+        shell: pwsh
+        run: |
+          $winFiles = @(
+            "tests/integration/test_vertical_slice.py",
+            "tests/integration/test_windows_integration_stage7.py",
+            "tests/integration/test_real_windows_os_intelligence.py"
+          )
+          python -m pytest $winFiles -v --tb=short

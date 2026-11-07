@@ -1,0 +1,98 @@
+name: Build Standalone Windows Executable
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows-exe:
+    name: Build WinAI-OE.exe
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: 'pip'
+
+      - name: Install Build Dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Compile Standalone Executable via PyInstaller
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --clean `
+            --name WinAI-OE `
+            --onedir `
+            --console `
+            --paths . `
+            --add-data 'src/orchestrator/dashboard.html;src/orchestrator' `
+            --add-data 'src/orchestrator/ui;src/orchestrator/ui' `
+            --hidden-import fastapi `
+            --hidden-import uvicorn `
+            --hidden-import uiautomation `
+            --hidden-import comtypes `
+            --hidden-import comtypes.client `
+            --hidden-import pydantic `
+            --hidden-import pydantic_settings `
+            --hidden-import websockets `
+            --hidden-import httpx `
+            --hidden-import psutil `
+            --hidden-import win32gui `
+            --hidden-import win32con `
+            --hidden-import win32process `
+            --hidden-import pythoncom `
+            --hidden-import pywintypes `
+            --hidden-import PIL `
+            --hidden-import anyio `
+            --hidden-import tkinter `
+            --hidden-import starlette.staticfiles `
+            --hidden-import src.platform `
+            --hidden-import src.platform.routes `
+            --hidden-import src.platform.control_db `
+            --hidden-import src.platform.auth `
+            --hidden-import src.platform.agent_config `
+            --hidden-import src.voice `
+            --hidden-import src.voice.api_routes `
+            --hidden-import src.voice.pipeline `
+            --hidden-import src.voice.intent_schema `
+            --hidden-import src.voice.session `
+            --hidden-import src.voice.speech_input `
+            --hidden-import src.voice.speech_output `
+            --hidden-import src.voice.gnani_stt `
+            --hidden-import src.voice.gnani_tts `
+            --hidden-import src.voice.capability_registry `
+            run_vertical_slice.py
+
+      - name: Verify Binary Output
+        shell: pwsh
+        run: |
+          $exe = "dist/WinAI-OE/WinAI-OE.exe"
+          if (-not (Test-Path $exe)) {
+            Write-Error "Binary build failed: $exe not found."
+            exit 1
+          }
+          $hash = (Get-FileHash -Path $exe -Algorithm SHA256).Hash
+          Write-Host "[+] Binary generated successfully: $exe (SHA256: $hash)"
+
+      - name: Archive Executable Package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist/WinAI-OE/* -DestinationPath dist/WinAI-OE-Windows-x64.zip -Force
+
+      - name: Upload Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WinAI-OE-Windows-x64
+          path: dist/WinAI-OE-Windows-x64.zip
+          retention-days: 30

@@ -1,0 +1,155 @@
+<svg width="1200" height="480" viewBox="0 0 1200 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradients -->
+    <radialGradient id="bgGlow" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#0e1f3d" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#081026" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#040714" stop-opacity="1"/>
+    </radialGradient>
+    <linearGradient id="cyberBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f3ff" stop-opacity="0.8"/>
+      <stop offset="35%" stop-color="#38bdf8" stop-opacity="0.3"/>
+      <stop offset="70%" stop-color="#818cf8" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#00f3ff" stop-opacity="0.7"/>
+    </linearGradient>
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#e0f2fe"/>
+      <stop offset="75%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#00f3ff"/>
+    </linearGradient>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(14, 165, 233, 0.15)"/>
+      <stop offset="100%" stop-color="rgba(56, 189, 248, 0.05)"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#00f3ff"/>
+    </linearGradient>
+    <!-- Technical Grid Pattern -->
+    <pattern id="techGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(56, 189, 248, 0.05)" stroke-width="1"/>
+      <circle cx="40" cy="40" r="1" fill="rgba(0, 243, 255, 0.15)"/>
+    </pattern>
+    <!-- Filter Glow -->
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Base Canvas Background -->
+  <rect width="1200" height="480" rx="16" fill="url(#bgGlow)"/>
+  <rect width="1200" height="480" rx="16" fill="url(#techGrid)"/>
+  <rect x="1" y="1" width="1198" height="478" rx="15" fill="none" stroke="url(#cyberBorder)" stroke-width="1.5"/>
+
+  <!-- Top Decorative Header Bar -->
+  <g opacity="0.8">
+    <path d="M 40 24 L 280 24 L 300 44 L 900 44 L 920 24 L 1160 24" fill="none" stroke="rgba(56, 189, 248, 0.25)" stroke-width="1.5"/>
+    <circle cx="40" cy="24" r="3" fill="#00f3ff"/>
+    <circle cx="1160" cy="24" r="3" fill="#00f3ff"/>
+    <rect x="520" y="22" width="160" height="4" rx="2" fill="#00f3ff" opacity="0.4"/>
+  </g>
+
+  <!-- Status Badges Top Left & Right -->
+  <g transform="translate(60, 48)">
+    <rect width="164" height="26" rx="13" fill="rgba(16, 185, 129, 0.12)" stroke="#10b981" stroke-width="1"/>
+    <circle cx="14" cy="13" r="4" fill="#10b981"/>
+    <text x="26" y="17" fill="#34d399" font-family="'Segoe UI', -apple-system, sans-serif" font-size="11" font-weight="700" letter-spacing="1">ZERO IMPLICIT TRUST</text>
+  </g>
+
+  <g transform="translate(980, 48)">
+    <rect width="160" height="26" rx="13" fill="rgba(56, 189, 248, 0.12)" stroke="#38bdf8" stroke-width="1"/>
+    <text x="80" y="17" fill="#38bdf8" font-family="'Segoe UI', -apple-system, sans-serif" font-size="11" font-weight="700" letter-spacing="1" text-anchor="middle">WINDOWS 10 / 11 NATIVE</text>
+  </g>
+
+  <!-- Central Brand Logo & Title -->
+  <g transform="translate(60, 110)">
+    <!-- Tech Monogram Icon -->
+    <g transform="translate(0, 5)">
+      <rect width="70" height="70" rx="16" fill="rgba(14, 165, 233, 0.1)" stroke="#38bdf8" stroke-width="2"/>
+      <path d="M 22 24 L 35 48 L 48 24" fill="none" stroke="#00f3ff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M 26 46 L 44 46" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="35" cy="20" r="3" fill="#10b981"/>
+    </g>
+
+    <!-- Main Title -->
+    <text x="88" y="52" fill="url(#titleGrad)" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="52" font-weight="900" letter-spacing="2" filter="url(#neonGlow)">WinAI-OE</text>
+    <text x="88" y="80" fill="#94a3b8" font-family="'Segoe UI', -apple-system, sans-serif" font-size="16" font-weight="500" letter-spacing="0.5">Autonomous Windows AI Operating Environment &amp; Direct UI Automation Core</text>
+  </g>
+
+  <!-- Tagline Box -->
+  <g transform="translate(60, 222)">
+    <text x="0" y="0" fill="#cbd5e1" font-family="'Segoe UI', -apple-system, sans-serif" font-size="14.5" font-weight="400" line-height="1.5">
+      <tspan x="0" dy="0">A vendor-agnostic desktop execution system engineered with hardware-backed secrecy (DPAPI),</tspan>
+      <tspan x="0" dy="22">native accessibility control (UIAutomationCore), deterministic security policies, and continuous self-healing.</tspan>
+    </text>
+  </g>
+
+  <!-- 6 Core Architectural Feature Cards -->
+  <g transform="translate(60, 280)">
+    <!-- Card 1: UI Automation -->
+    <g transform="translate(0, 0)">
+      <rect width="345" height="72" rx="10" fill="url(#badgeGrad)" stroke="rgba(56, 189, 248, 0.25)" stroke-width="1"/>
+      <circle cx="32" cy="36" r="16" fill="rgba(56, 189, 248, 0.15)"/>
+      <text x="32" y="42" fill="#00f3ff" font-family="'Segoe UI Emoji', sans-serif" font-size="16" text-anchor="middle">🪟</text>
+      <text x="58" y="29" fill="#f1f5f9" font-family="'Segoe UI', sans-serif" font-size="13" font-weight="700">Native Windows UIA Control</text>
+      <text x="58" y="49" fill="#94a3b8" font-family="'Segoe UI', sans-serif" font-size="11">UIAutomationCore · Direct control trees · Zero screenshots</text>
+    </g>
+
+    <!-- Card 2: Security Policy -->
+    <g transform="translate(365, 0)">
+      <rect width="345" height="72" rx="10" fill="url(#badgeGrad)" stroke="rgba(16, 185, 129, 0.25)" stroke-width="1"/>
+      <circle cx="32" cy="36" r="16" fill="rgba(16, 185, 129, 0.15)"/>
+      <text x="32" y="42" fill="#10b981" font-family="'Segoe UI Emoji', sans-serif" font-size="16" text-anchor="middle">🛡️</text>
+      <text x="58" y="29" fill="#f1f5f9" font-family="'Segoe UI', sans-serif" font-size="13" font-weight="700">Zero-Implicit-Trust Security</text>
+      <text x="58" y="49" fill="#94a3b8" font-family="'Segoe UI', sans-serif" font-size="11">Policy matrix · CSPRNG nonces · Hash-chained audit logs</text>
+    </g>
+
+    <!-- Card 3: DPAPI Secrecy -->
+    <g transform="translate(730, 0)">
+      <rect width="345" height="72" rx="10" fill="url(#badgeGrad)" stroke="rgba(245, 158, 11, 0.25)" stroke-width="1"/>
+      <circle cx="32" cy="36" r="16" fill="rgba(245, 158, 11, 0.15)"/>
+      <text x="32" y="42" fill="#f59e0b" font-family="'Segoe UI Emoji', sans-serif" font-size="16" text-anchor="middle">🔐</text>
+      <text x="58" y="29" fill="#f1f5f9" font-family="'Segoe UI', sans-serif" font-size="13" font-weight="700">Windows DPAPI Hardware Vault</text>
+      <text x="58" y="49" fill="#94a3b8" font-family="'Segoe UI', sans-serif" font-size="11">CryptProtectData · TPM sealed · Zero plaintext keys</text>
+    </g>
+
+    <!-- Card 4: Multi-Tenant RBAC -->
+    <g transform="translate(0, 84)">
+      <rect width="345" height="72" rx="10" fill="url(#badgeGrad)" stroke="rgba(129, 140, 248, 0.25)" stroke-width="1"/>
+      <circle cx="32" cy="36" r="16" fill="rgba(129, 140, 248, 0.15)"/>
+      <text x="32" y="42" fill="#818cf8" font-family="'Segoe UI Emoji', sans-serif" font-size="16" text-anchor="middle">👥</text>
+      <text x="58" y="29" fill="#f1f5f9" font-family="'Segoe UI', sans-serif" font-size="13" font-weight="700">Dynamic Control Plane &amp; RBAC</text>
+      <text x="58" y="49" fill="#94a3b8" font-family="'Segoe UI', sans-serif" font-size="11">Super Admin · Admins · Users · SQLite WAL · Dynamic flags</text>
+    </g>
+
+    <!-- Card 5: JEV Decision Layer -->
+    <g transform="translate(365, 84)">
+      <rect width="345" height="72" rx="10" fill="url(#badgeGrad)" stroke="rgba(244, 63, 94, 0.25)" stroke-width="1"/>
+      <circle cx="32" cy="36" r="16" fill="rgba(244, 63, 94, 0.15)"/>
+      <text x="32" y="42" fill="#f43f5e" font-family="'Segoe UI Emoji', sans-serif" font-size="16" text-anchor="middle">⚡</text>
+      <text x="58" y="29" fill="#f1f5f9" font-family="'Segoe UI', sans-serif" font-size="13" font-weight="700">System One Decision Layer</text>
+      <text x="58" y="49" fill="#94a3b8" font-family="'Segoe UI', sans-serif" font-size="11">TypeSafe AI JEV · Fast probabilistic classification · ~0.18ms</text>
+    </g>
+
+    <!-- Card 6: Standalone Executable -->
+    <g transform="translate(730, 84)">
+      <rect width="345" height="72" rx="10" fill="url(#badgeGrad)" stroke="rgba(168, 85, 247, 0.25)" stroke-width="1"/>
+      <circle cx="32" cy="36" r="16" fill="rgba(168, 85, 247, 0.15)"/>
+      <text x="32" y="42" fill="#a855f7" font-family="'Segoe UI Emoji', sans-serif" font-size="16" text-anchor="middle">📦</text>
+      <text x="58" y="29" fill="#f1f5f9" font-family="'Segoe UI', sans-serif" font-size="13" font-weight="700">Standalone Windows .EXE</text>
+      <text x="58" y="49" fill="#94a3b8" font-family="'Segoe UI', sans-serif" font-size="11">Packaged binary · Loopback REST &amp; WebSockets · Desktop Shell</text>
+    </g>
+  </g>
+
+  <!-- Bottom Terminal Accent Line -->
+  <g transform="translate(60, 452)">
+    <text x="0" y="10" fill="#475569" font-family="Consolas, monospace" font-size="10.5">github.com/vakrahul/WinOS-AI • MIT License • 412+ Automated Tests Passing (100%)</text>
+    <circle cx="1060" cy="7" r="4" fill="#10b981"/>
+    <text x="1072" y="10" fill="#10b981" font-family="Consolas, monospace" font-size="10.5" font-weight="bold">SYSTEM ACTIVE</text>
+  </g>
+</svg>

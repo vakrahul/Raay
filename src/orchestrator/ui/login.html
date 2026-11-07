@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WinAI-OE — Sign in</title>
+<link rel="stylesheet" href="/ui/styles.css">
+</head>
+<body>
+<main class="login-wrap">
+  <div class="panel">
+    <h2>WinAI-OE Control Plane</h2>
+    <p style="color:var(--muted);font-size:13px">Sign in with your administrator or user account.</p>
+    <div id="err" style="color:var(--bad);font-size:13px;min-height:20px"></div>
+    <form id="f">
+      <label>Email<input id="email" type="email" required autocomplete="username"></label>
+      <label>Password<input id="password" type="password" required autocomplete="current-password"></label>
+      <div class="row" style="margin-top:12px"><div><button type="submit" style="width:100%">Sign in</button></div></div>
+    </form>
+    <p style="color:var(--muted);font-size:12px">First run? Create the initial Super Admin via <span class="mono">POST /auth/bootstrap</span> (allowed only on a fresh database).</p>
+  </div>
+</main>
+<script src="/ui/app.js"></script>
+<script>
+document.getElementById("f").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const err = document.getElementById("err");
+  err.textContent = "";
+  try {
+    const res = await fetch("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value,
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.detail || "Sign in failed");
+    store.token = body.token;
+    const me = await api("/me");
+    location.href = me.roles.includes("SUPER_ADMIN") || me.roles.includes("ADMIN") ? "/admin" : "/user";
+  } catch (ex) {
+    err.textContent = ex.message;
+  }
+});
+</script>
+</body>
+</html>
