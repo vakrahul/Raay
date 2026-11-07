@@ -59,9 +59,10 @@ graph TB
         Timbre["Gnani Timbre v3.0 & v2.5 TTS<br/>POST /api/v1/tts/sse • Streaming SSE<br/>10+ Indic Languages • Lakh/Crore Prosody"]:::gnani
     end
 
-    subgraph VoiceCore["3. Multilingual Voice Router & Conversational Planner"]
+    subgraph VoiceCore["3. Pluggable LLM Reasoning & Conversational Planner"]
+        Adapters["Universal LLM Adapter Registry (src/providers/)<br/>Anthropic Claude • OpenAI GPT • Google Gemini • Local Ollama"]:::brain
         FastStop["Sub-200ms Stop & Undo Barge-In Gate<br/>CancelToken + Emergency Input Release"]:::brain
-        Planner["Conversational Turn Planner<br/>Script Ratio Verifier & 3-Turn Memory"]:::brain
+        Planner["Conversational Turn & DAG Task Planner<br/>Script Ratio Verifier & 3-Turn Memory"]:::brain
         Cache["SHA-256 Deterministic TTS Cache<br/>Sub-1ms Instant Disk Replay"]:::brain
     end
 
@@ -84,6 +85,7 @@ graph TB
     Cockpit --> Prisma
     Prisma --> FastStop
     Prisma --> Planner
+    Adapters <--> Planner
     Planner --> Policy
     Policy -->|REQUIRE_APPROVAL| Nonce
     Policy -->|ALLOW| Excel
@@ -107,17 +109,18 @@ graph TB
 ```mermaid
 flowchart LR
     A["Spoken Utterance<br/>Telugu / Hindi / Tamil / Hinglish"] --> B["Gnani Prisma STT<br/>WSS /stt/v3/stream"]
-    B --> C{"Wake-Word &<br/>Intent Router"}
-    C -->|Instant Wake| D["Pre-Warmed Greeting Cache<br/>Sub-1ms Response"]
-    C -->|Excel / Kirana BI| E["ExcelGroceryController<br/>Live COM Sheet + UPI/GST Math"]
-    C -->|MS Paint Studio| F["Windows11PaintController<br/>UIA Shapes + In-Place Recolour"]
-    C -->|Cross-App Workflows| G["VS Code Export • Downloads Summary<br/>Smart Browser • OS Timers"]
-    C -->|Conversational Query| H["ConversationalTurnPlanner<br/>Script Verification"]
-    D --> I["Gnani Timbre v3.0 TTS<br/>SSE Stream + SHA-256 Cache"]
-    E --> I
-    F --> I
-    G --> I
-    H --> I
+    B --> C["Pluggable LLM Planner Adapter<br/>Claude • GPT • Gemini • Local Ollama"]
+    C --> D{"Wake-Word &<br/>Task DAG Router"}
+    D -->|Instant Wake| E["Pre-Warmed Greeting Cache<br/>Sub-1ms Response"]
+    D -->|Excel / Kirana BI| F["ExcelGroceryController<br/>Live COM Sheet + UPI/GST Math"]
+    D -->|MS Paint Studio| G["Windows11PaintController<br/>UIA Shapes + In-Place Recolour"]
+    D -->|Cross-App Workflows| H["VS Code Export • Downloads Summary<br/>Smart Browser • OS Timers"]
+    D -->|Conversational Query| I["ConversationalTurnPlanner<br/>Script Verification"]
+    E --> J["Gnani Timbre v3.0 TTS<br/>SSE Stream + SHA-256 Cache"]
+    F --> J
+    G --> J
+    H --> J
+    I --> J
 ```
 
 ---
@@ -163,8 +166,9 @@ sequenceDiagram
 
 ---
 
-## 6. Gnani.ai Models & APIs Used
+## 6. Gnani.ai Speech Stack & Pluggable External LLM Adapters
 
+### 6.1 Gnani.ai Sovereign Speech Models (`src/voice/`)
 1. **Gnani Prisma Speech-to-Text (`src/voice/gnani_stt.py`):**
    - **Realtime WebSocket (`wss://api.vachana.ai/stt/v3/stream`):** Streams 16 kHz mono PCM16 frames (`1,024` bytes / `32ms`) with server-side Voice Activity Detection (`x-vad-threshold`, `x-min-silence-ms`, `x-min-speech-ms`, `x-min-segment-ms`), domain keyword biasing (`x-bias-list`, `x-bias-score`), and dynamic mid-stream `update_settings` frames.
    - **REST Decode (`POST https://api.vachana.ai/stt/v3`):** Supports telephonic noise cancellation (`nc=true`) and Inverse Text Normalization (`format=transcribe` for `hi-IN` and `en-IN`).
@@ -172,6 +176,16 @@ sequenceDiagram
 2. **Gnani Timbre v3.0 & v2.5 Text-to-Speech (`src/voice/gnani_tts.py`):**
    - **Streaming SSE (`POST https://api.vachana.ai/api/v1/tts/sse`) & REST (`POST /api/v1/tts/inference`):** Synthesizes natural multilingual voices (`Shivani`, `Lakshmi`, `Avinash`, `Shubham`, etc.) with authentic Indian numeral, `₹` rupee, lakh, and crore cadence.
    - **Streaming WAV Header Repair & SHA-256 Disk Cache:** Repairs `0xFFFFFFFF` streaming RIFF headers on the fly and caches synthesized audio by `sha256(text + voice + model)` in `.winai/tts_cache/` for sub-millisecond replay.
+
+### 6.2 Pluggable External LLM Adapter Layer (`src/providers/`)
+Before decomposing a spoken Indian-language request into an OS automation task graph, **Raay** routes complex open-ended intents through a provider-agnostic **`BaseModelProvider` adapter layer** (`src/providers/registry.py`). You can plug in **any external or local LLM** for task planning, report summarization, and conversational reasoning:
+
+| Adapter Module | Supported Models | Primary Role Before OS Automation |
+| :--- | :--- | :--- |
+| **`AnthropicAdapter`** (`src/providers/anthropic_adapter.py`) | **Claude 3.5 / 3.7 Sonnet, Claude Haiku** | Multi-step DAG task planning, code generation & structured JSON intent extraction |
+| **`OpenAIAdapter`** (`src/providers/openai_adapter.py`) | **GPT-4o, GPT-4o-mini, o3-mini** | Open-ended goal decomposition, Excel BI question answering & document synthesis |
+| **`GeminiAdapter`** (`src/providers/gemini_adapter.py`) | **Gemini 2.5 / 2.0 Flash & Pro** | Ultra-low-latency multilingual (`te-IN`, `hi-IN`, `ta-IN`) conversational planning & local report summarization |
+| **`LocalAdapter`** (`src/providers/local_adapter.py`) | **Ollama / vLLM / OpenAI-Compatible Local Endpoints** | 100% offline/air-gapped local reasoning prior to desktop execution |
 
 ---
 
@@ -223,15 +237,18 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### Step 2: Configure Your Gnani.ai API Key (Windows DPAPI Hardware Vault)
-**Zero API keys are ever stored in plaintext or `.env` files.** Store your Gnani.ai Vachana API key in the Windows DPAPI Credential Vault:
+### Step 2: Configure Gnani.ai & Optional External LLM Adapter (Claude / GPT / Gemini)
+**Zero API keys are ever stored in plaintext or `.env` files.** Store your **Gnani.ai Vachana API key** and any preferred external planning LLM key (**Claude**, **GPT**, or **Gemini**) in the Windows DPAPI Hardware Credential Vault:
 
 ```powershell
-# Option A: Encrypt in Windows DPAPI Vault (recommended)
+# 1. Required: Store Gnani.ai Vachana API Key (for Prisma STT & Timbre TTS)
 python -c "from src.storage.credential_vault import CredentialVault; CredentialVault().store_credential('gnani_api_key', 'YOUR_GNANI_VACHANA_API_KEY')"
 
-# Option B: Session environment variable
-$env:GNANI_API_KEY = "YOUR_GNANI_VACHANA_API_KEY"
+# 2. Optional: Plug in any external LLM adapter for open-ended task planning (Claude, GPT, or Gemini)
+python -c "from src.storage.credential_vault import CredentialVault; v = CredentialVault(); v.store_credential('gemini', 'YOUR_GEMINI_API_KEY')"
+# Or for OpenAI GPT / Anthropic Claude:
+# python -c "from src.storage.credential_vault import CredentialVault; v = CredentialVault(); v.store_credential('openai', 'YOUR_OPENAI_API_KEY')"
+# python -c "from src.storage.credential_vault import CredentialVault; v = CredentialVault(); v.store_credential('anthropic', 'YOUR_CLAUDE_API_KEY')"
 ```
 
 ### Step 3: Launch Raay Orchestrator & Always-On Voice Listener
