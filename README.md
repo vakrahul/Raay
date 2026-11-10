@@ -1,4 +1,4 @@
-# Raay — Sovereign Indian Voice Operating System for Windows 11
+# Raay  Sovereign Indian Voice Operating System for Windows 11
 
 > **Don't type in English. Speak naturally in your own Indian language — Raay understands, plans, and operates your computer automatically.**  
 > *Built on **Gnani.ai's Sovereign Speech Stack (`Gnani Prisma STT` & `Gnani Timbre TTS`)** for **The Great Indian AI Internship Challenge (`#GreatIndianAIInternshipChallenge #GnaniAI`)**.*
